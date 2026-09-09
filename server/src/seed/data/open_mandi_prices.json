@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "source": "Agmarknet / Open Government Data Portal (data.gov.in)",
+    "dataType": "OPEN_DATA",
+    "description": "Cleaned historical mandi arrival prices for key agricultural commodities across South Indian APMC mandis",
+    "lastUpdated": "2026-09-01T00:00:00.000Z"
+  },
+  "markets": [
+    {
+      "key": "madanapalle",
+      "name": "Madanapalle APMC Market",
+      "district": "Annamayya / Chittoor",
+      "state": "Andhra Pradesh",
+      "coordinates": { "lat": 13.5504, "lng": 78.5028 },
+      "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "apmcFeePercent": 1.0
+    },
+    {
+      "key": "kolar",
+      "name": "Kolar APMC Market",
+      "district": "Kolar",
+      "state": "Karnataka",
+      "coordinates": { "lat": 13.1367, "lng": 78.1292 },
+      "operatingDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "apmcFeePercent": 1.5
+    },
+    {
+      "key": "bangalore",
+      "name": "Yeshwanthpur APMC Market",
+      "district": "Bangalore Urban",
+      "state": "Karnataka",
+      "coordinates": { "lat": 13.0238, "lng": 77.5501 },
+      "operatingDays": ["Everyday"],
+      "apmcFeePercent": 1.5
+    },
+    {
+      "key": "tirupati",
+      "name": "Tirupati APMC Market",
+      "district": "Tirupati",
+      "state": "Andhra Pradesh",
+      "coordinates": { "lat": 13.6288, "lng": 79.4192 },
+      "operatingDays": ["Monday", "Wednesday", "Friday", "Saturday"],
+      "apmcFeePercent": 1.0
+    },
+    {
+      "key": "chittoor",
+      "name": "Chittoor APMC Market",
+      "district": "Chittoor",
+      "state": "Andhra Pradesh",
+      "coordinates": { "lat": 13.2172, "lng": 79.1003 },
+      "operatingDays": ["Monday", "Tuesday", "Thursday", "Saturday"],
+      "apmcFeePercent": 1.0
+    }
+  ],
+  "commodities": [
+    {
+      "key": "tomato",
+      "name": "Tomato",
+      "category": "VEGETABLE",
+      "unit": "kg",
+      "shelfLifeDays": 7,
+      "grades": ["Grade A", "Grade B", "Grade C"],
+      "icon": "🍅"
+    },
+    {
+      "key": "onion",
+      "name": "Onion",
+      "category": "VEGETABLE",
+      "unit": "kg",
+      "shelfLifeDays": 30,
+      "grades": ["Grade A", "Grade B"],
+      "icon": "🧅"
+    },
+    {
+      "key": "potato",
+      "name": "Potato",
+      "category": "VEGETABLE",
+      "unit": "kg",
+      "shelfLifeDays": 45,
+      "grades": ["Grade A", "Grade B"],
+      "icon": "🥔"
+    },
+    {
+      "key": "rice",
+      "name": "Rice (Sona Masoori)",
+      "category": "GRAIN",
+      "unit": "kg",
+      "shelfLifeDays": 365,
+      "grades": ["Premium", "Standard"],
+      "icon": "🌾"
+    },
+    {
+      "key": "maize",
+      "name": "Maize",
+      "category": "GRAIN",
+      "unit": "kg",
+      "shelfLifeDays": 180,
+      "grades": ["Grade A", "Grade B"],
+      "icon": "🌽"
+    },
+    {
+      "key": "chilli",
+      "name": "Dry Red Chilli",
+      "category": "VEGETABLE",
+      "unit": "kg",
+      "shelfLifeDays": 180,
+      "grades": ["Grade A", "Grade B"],
+      "icon": "🌶️"
+    },
+    {
+      "key": "cotton",
+      "name": "Cotton",
+      "category": "GRAIN",
+      "unit": "kg",
+      "shelfLifeDays": 365,
+      "grades": ["Grade A"],
+      "icon": "☁️"
+    }
+  ]
+}
