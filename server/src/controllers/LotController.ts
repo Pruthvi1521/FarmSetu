@@ -157,6 +157,46 @@ export const getLotDetails = async (req: Request, res: Response) => {
   }
 };
 
+// ─── Get Offers for Lot ────────────────────────────────────────────────────────
+
+export const getOffersForLot = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+
+    const id = req.params.id || req.params.lotId;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid lot ID format' });
+    }
+
+    const lot = await SaleLot.findById(id);
+    if (!lot) {
+      return res.status(404).json({ error: 'Lot not found' });
+    }
+
+    const isOwner = lot.farmerId.toString() === req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+    const isBuyer = req.user.role === 'BUYER';
+
+    if (!isOwner && !isAdmin && !isBuyer) {
+      return res.status(403).json({ error: 'You are not authorized to view offers for this lot' });
+    }
+
+    const filter: any = { lotId: id };
+    if (isBuyer && !isOwner && !isAdmin) {
+      filter.buyerId = req.user.id;
+    }
+
+    const offers = await Offer.find(filter)
+      .populate('buyerId', 'name phone location')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json(offers);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Error fetching offers for lot' });
+  }
+};
+
 // ─── Submit Offer ──────────────────────────────────────────────────────────────
 
 export const submitOffer = async (req: AuthRequest, res: Response) => {

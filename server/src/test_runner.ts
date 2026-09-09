@@ -232,6 +232,16 @@ async function main() {
       });
       assert('D1: First offer placed successfully', d1.status === 201, d1.data);
 
+      // GET /lots/:id/offers endpoint validation
+      const getOffersResp = await get(farmer, `/lots/${validLotId}/offers`);
+      assert('GET /lots/:id/offers returns 200 with offers array for owner farmer', getOffersResp.status === 200 && Array.isArray(getOffersResp.data) && getOffersResp.data.length > 0, getOffersResp.data);
+
+      const invalidLotOffers = await get(farmer, '/lots/invalid-id/offers');
+      assert('GET /lots/invalid-id/offers returns 400 for invalid ObjectId', invalidLotOffers.status === 400, invalidLotOffers.data?.error);
+
+      const missingLotOffers = await get(farmer, '/lots/507f1f77bcf86cd799439011/offers');
+      assert('GET /lots/nonexistent/offers returns 404 for missing lot', missingLotOffers.status === 404, missingLotOffers.data?.error);
+
       const d2 = await post(buyer, `/lots/${validLotId}/offers`, {
         pricePerKg: 29,
         transportationTerms: 'BUYER_PICKUP',
