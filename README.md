@@ -20,9 +20,9 @@ Traditional agricultural supply chains in India suffer from major inefficiencies
 4. **Opaque Freight Costs**: High hidden logistics fees eat into farmer profit margins.
 
 **FarmSetu addresses these challenges through:**
-- **Dynamic Price Intelligence Engine**: Recommends optimal pricing based on historical Mandi modal prices, crop grade quality multipliers, seasonal demand, and location.
-- **Net-Payout Market Ranking Engine**: Ranks regional Mandis for any crop lot by computing expected price minus real-time dynamic logistics cost per ton/km.
-- **Buyer-Farmer Match Scoring**: Uses vector-like multi-attribute matching (crop compatibility, target price delta, distance, quantity fit) to match farmers with optimal bulk buyers.
+- **Dynamic Price Intelligence Engine**: Predicts multi-day market prices using WMA + Holt's Double Exponential Smoothing + Seasonality + Arrival Penalty.
+- **Net-Payout Market Ranking Engine**: Ranks regional Mandis using a 6-factor matrix computing expected net revenue after transport and APMC fees.
+- **Buyer-Farmer Match Scoring**: Uses a weighted 6-attribute matching model (crop fit, quantity fit, grade, proximity, verification, reliability) to match farmers with bulk buyers.
 - **End-to-End Escrow-Style Transaction Lifecycle**: Structured offer creation, counter-offers, acceptance, binding transaction creation, status tracking, and completion.
 - **Hardened Role-Based Portals**: Tailored interfaces for Farmers, Buyers, and Platform Administrators with strict authorization and rate-limiting safeguards.
 
@@ -32,10 +32,10 @@ Traditional agricultural supply chains in India suffer from major inefficiencies
 
 ### 👨‍🌾 Farmer Portal
 - **Lot Listing Management**: Create and manage crop produce listings with specific quantities, harvest dates, locations, quality grades (Grade A, B, C), and desired prices.
-- **Smart Price Advisor**: Get instant min, max, and suggested listing price recommendations derived from live market algorithms.
-- **Best Market Finder**: Interactive visual comparison ranking top regional markets by projected net earnings after transport deduction.
+- **Smart Price Advisor**: Get instant price forecasts, trend indicators, and confidence intervals derived from live algorithmic models.
+- **Best Market Finder**: Interactive visual comparison ranking top regional markets by projected net earnings after transport and APMC fee deductions.
 - **Negotiation Center**: Review buyer offers, accept, reject, or submit binding counter-offers.
-- **Financial Analytics**: Real-time dashboard tracking total sales revenue, active listings, and exact calculated transport expenses.
+- **Financial Analytics**: Real-time dashboard tracking total sales revenue, active listings, and exact calculated transport expenses over rolling 12-month windows.
 
 ### 🏢 Buyer Portal
 - **Marketplace Discovery**: Filter and search crop lots by commodity, location, minimum grade, price range, and quantity.
@@ -46,7 +46,7 @@ Traditional agricultural supply chains in India suffer from major inefficiencies
 ### 🛡️ Admin Portal
 - **System Metrics Monitoring**: Aggregate platform statistics including total user count, active lots, completed transactions, and gross merchandise value (GMV).
 - **User & Lot Oversight**: Manage platform users, inspect listings, and audit active transactions.
-- **Market Price Management**: Update baseline market price data across regional Mandis.
+- **Market Price Management**: Access baseline market price data across regional Mandis.
 
 ---
 
@@ -70,7 +70,7 @@ FarmSetu/
 │   │   ├── models/         # MongoDB Mongoose Schemas & Models
 │   │   ├── providers/      # Market Data Abstraction Layer
 │   │   ├── routes/         # Express REST API Route Definitions
-│   │   ├── seeders/        # Comprehensive Database Seed Scripts
+│   │   ├── seed/           # Comprehensive Database Seed Scripts
 │   │   └── services/       # Core Mathematical & Algorithmic Engines
 └── shared/                 # Common Domain Interfaces & Data Models
 ```
@@ -79,39 +79,57 @@ FarmSetu/
 - **Frontend Framework**: React 18, Vite 5, TypeScript 5
 - **Styling & UI**: Custom CSS Design Tokens, Glassmorphism, Responsive Grid System, Lucide Icons
 - **Backend Runtime**: Node.js v18+, Express 4, TypeScript 5 (`ts-node`)
-- **Database Layer**: MongoDB 6+ with Mongoose ODM
+- **Database Layer**: MongoDB 6+ (with MongoMemoryServer auto-fallback when offline)
 - **Security**: JSON Web Tokens (JWT), Bcrypt password hashing, Express Rate Limiter, Helmet headers, CORS policies
-- **Testing**: Node.js Native Test Runner (`tsx` test runner execution)
+- **Testing**: End-to-End Automated Test Runner (`ts-node` test execution)
 
 ---
 
 ## 🧮 Mathematical Models & Core Algorithms
 
-### 1. Dynamic Price Suggestion Formula
-Calculates recommended price per quintal/kg based on baseline mandi modal price, produce grade, harvest freshness, and location:
+### 1. Multi-Day Price Forecasting Model
+Predicts future commodity prices for a target market horizon ($T$ days) combining Weighted Moving Average (7-day window), Holt's Double Exponential Smoothing ($\alpha = 0.3, \beta = 0.1$), Monthly Seasonality Ratio, and Arrival Volume Penalty:
 
-$$\text{Suggested Price} = \text{Base Price} \times \text{Quality Multiplier} \times \text{Seasonality Factor} \times \text{Freshness Multiplier}$$
+$$\text{Ensemble Price} = \left(0.5 \cdot \text{WMA}_7 + 0.5 \cdot \text{Holt}_T\right) \times \text{Seasonality Multiplier} - \text{Arrival Penalty}$$
 
-Where:
-- **Quality Multipliers**: Grade A = $1.15$, Grade B = $1.00$, Grade C = $0.85$
-- **Freshness Multiplier**: Decreases by $0.5\%$ per day post-harvest up to 14 days.
+- **Confidence Score (60–95%)**: Decays based on standard deviation ($\sigma$) and forecast horizon ($T$):
+$$\text{Confidence Score} = \min\left(95, \max\left(60, 92 - 2.5\sigma - 1.5T\right)\right)$$
 
-### 2. Net-Payout Market Ranking Formula
-Ranks all accessible markets for a farmer's crop lot based on net profitability:
+### 2. Market Ranking Engine (6-Factor Matrix)
+Ranks candidate APMC Mandis for a farmer's produce lot using normalized 6-factor decision weights:
 
-$$\text{Transport Cost} = \text{Base Freight} + (\text{Distance (km)} \times \text{Rate per km/ton} \times \text{Weight (tons)})$$
-$$\text{Projected Revenue} = \text{Lot Quantity} \times \text{Market Projected Price}$$
-$$\text{Net Payout} = \text{Projected Revenue} - \text{Transport Cost}$$
+1. **Net Revenue Score (40%)**: Profit after transport & APMC fees.
+2. **Forecast Price Score (20%)**: Projected market price.
+3. **Demand Level Score (15%)**: Market demand index ($\text{HIGH}=100, \text{MEDIUM}=65, \text{LOW}=30$).
+4. **Proximity Score (10%)**: Haversine distance decay.
+5. **Price Trend Score (10%)**: Trajectory ($\text{INCREASING}=100, \text{STABLE}=60, \text{DECREASING}=20$).
+6. **Forecast Confidence Score (5%)**: Prediction accuracy index.
+
+**Net Payout Formula**:
+$$\text{Gross Revenue} = \text{Lot Quantity (kg)} \times \text{Market Forecasted Price}$$
+$$\text{APMC Fee} = \text{Gross Revenue} \times \frac{\text{APMC Fee \%}}{100}$$
+$$\text{Expected Net Revenue} = \text{Gross Revenue} - \text{Transport Cost} - \text{APMC Fee}$$
 
 ### 3. Buyer-Farmer Match Score (0–100%)
-Determines mutual suitability between a buyer request and a listed lot:
+Determines mutual suitability between a bulk buyer and a listed produce lot across 6 weighted attributes:
 
-$$\text{Match Score} = W_{grade} \cdot S_{grade} + W_{price} \cdot S_{price} + W_{distance} \cdot S_{distance} + W_{quantity} \cdot S_{quantity}$$
+$$\text{Match Score} = 0.30 \cdot S_{\text{crop}} + 0.20 \cdot S_{\text{qty}} + 0.15 \cdot S_{\text{quality}} + 0.15 \cdot S_{\text{dist}} + 0.10 \cdot S_{\text{verif}} + 0.10 \cdot S_{\text{rel}}$$
 
 Where:
-- $W_{grade} = 0.30$, $W_{price} = 0.35$, $W_{distance} = 0.20$, $W_{quantity} = 0.15$
-- $S_{price} = \max\left(0, 1 - \frac{|\text{Offer Price} - \text{Target Price}|}{\text{Target Price}}\right)$
-- $S_{distance} = \max\left(0, 1 - \frac{\text{Distance}}{500 \text{ km}}\right)$
+- $S_{\text{crop}}$: 100 if commodity is in buyer's preferred list, else 20.
+- $S_{\text{qty}}$: Quantity fit score ($\min(100, \max(50, \frac{\text{quantityKg}}{2000} \cdot 85))$).
+- $S_{\text{quality}}$: Grade A (100), Grade B (80), Grade C (60).
+- $S_{\text{dist}}$: Haversine distance score ($\max(20, 100 \cdot (1 - \frac{\text{distanceKm}}{200}))$.
+- $S_{\text{verif}}$: Verification status score.
+- $S_{\text{rel}}$: Buyer reliability rating score ($0–100\%$).
+
+### 4. Dynamic Freight Transport Model
+Estimates logistics costs using Haversine distance ($R=6371\text{ km}$) and vehicle capacity tiers:
+- **$\le 1,500\text{ kg}$**: Tractor (1–2 Tonnes) @ ₹20/km
+- **$\le 3,500\text{ kg}$**: Small Truck (1–3 Tonnes) @ ₹25/km
+- **$> 3,500\text{ kg}$**: Medium Truck (3–8 Tonnes) @ ₹38/km
+
+$$\text{Estimated Freight Cost} = \max\left(800, \text{Math.round}(\text{Distance (km)} \times \text{Rate per km})\right)$$
 
 ---
 
@@ -120,7 +138,7 @@ Where:
 ### Prerequisites
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
-- **MongoDB**: Local instance running at `mongodb://localhost:27017` or a MongoDB Atlas URI
+- **MongoDB**: Local instance running at `mongodb://localhost:27017` (Auto-spins `MongoMemoryServer` if local daemon is offline)
 
 ### 1. Clone Repository & Install Dependencies
 ```bash
@@ -141,21 +159,21 @@ Create a `.env` file in the `server` folder based on `.env.example`:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/farmsetu
+MONGODB_URI=mongodb://127.0.0.1:27017/farmsetu
 JWT_SECRET=farmsetu_super_secret_jwt_key_2026
+CLIENT_ORIGIN=http://localhost:5173,http://localhost:3000
 NODE_ENV=development
-CLIENT_URL=http://localhost:5173
 ```
 
 ### 3. Database Seeding
-Populate the database with realistic Mandi market prices, sample users (Farmer, Buyer, Admin), active crop lots, and past transactions:
+Populate the database with realistic Mandi market prices (2,000+ price/arrival records), sample users (Farmer, Buyer, Admin), active crop lots, demand records, and weather updates:
 
 ```bash
 cd server
 npm run seed
 ```
 
-### 4. Running the Development Servers
+### 4. Running Development Servers
 
 **Start Backend Server:**
 ```bash
@@ -180,25 +198,26 @@ npm run dev
 | **Auth** | `/api/auth/register` | `POST` | Public | Register new Farmer or Buyer |
 | **Auth** | `/api/auth/login` | `POST` | Public | Authenticate user & return JWT token |
 | **Auth** | `/api/auth/me` | `GET` | Authenticated | Fetch current user session profile |
+| **Auth** | `/api/auth/demo-login` | `POST` | Public | Instant demo login for evaluation |
+| **Market Intelligence** | `/api/market-intelligence/commodities` | `GET` | Public | Get list of supported commodities |
+| **Market Intelligence** | `/api/market-intelligence/prices/current` | `GET` | Public | Get current mandi market prices |
+| **Market Intelligence** | `/api/market-intelligence/prices/history` | `GET` | Public | Fetch historical prices for a crop/market |
+| **Market Intelligence** | `/api/market-intelligence/recommend` | `POST` | Public | Execute market ranking & price forecast engine |
+| **Market Intelligence** | `/api/market-intelligence/parse-input` | `POST` | Public | Parse unstructured text/voice query |
 | **Lots** | `/api/lots` | `GET` | Public | Query marketplace lots with filters |
 | **Lots** | `/api/lots` | `POST` | Farmer | Create new crop lot listing |
 | **Lots** | `/api/lots/:id` | `GET` | Public | Retrieve detailed lot information |
-| **Lots** | `/api/lots/:id` | `PUT` | Owner | Update active lot details |
+| **Lots** | `/api/lots/:id/offers` | `POST` | Buyer | Submit or update price offer on a lot |
+| **Lots** | `/api/lots/offers/:offerId/accept` | `POST` | Owner | Accept offer & trigger transaction |
 | **Lots** | `/api/lots/:id/cancel` | `PATCH` | Owner | Cancel active lot listing |
-| **Offers** | `/api/offers` | `POST` | Buyer | Submit price offer on a lot |
-| **Offers** | `/api/offers/lot/:lotId` | `GET` | Auth | Get all offers for a specific lot |
-| **Offers** | `/api/offers/:id/accept` | `POST` | Owner | Accept offer & trigger transaction |
-| **Offers** | `/api/offers/:id/counter`| `POST` | Owner/Buyer | Submit counter-offer proposal |
-| **Offers** | `/api/offers/:id/cancel` | `POST` | Sender | Cancel pending offer |
-| **Transactions**| `/api/transactions` | `GET` | Auth | View user transactions |
-| **Transactions**| `/api/transactions/:id/complete` | `PATCH` | Auth | Finalize transaction fulfillment |
-| **Intelligence**| `/api/intelligence/suggest-price` | `GET` | Public | Get dynamic price recommendations |
-| **Intelligence**| `/api/intelligence/market-rankings` | `GET` | Public | Get net-payout market rankings |
-| **Intelligence**| `/api/intelligence/match-score` | `POST` | Auth | Compute buyer-farmer match score |
-| **Analytics** | `/api/analytics/farmer` | `GET` | Farmer | Get revenue & transport analytics |
-| **Analytics** | `/api/analytics/admin` | `GET` | Admin | Get platform-wide operational stats |
-| **Notifications**| `/api/notifications` | `GET` | Auth | Fetch user in-app notifications |
-| **Notifications**| `/api/notifications/:id/read` | `PATCH` | Auth | Mark notification as read |
+| **Transactions** | `/api/transactions` | `GET` | Auth | View user transactions |
+| **Transactions** | `/api/transactions/:id/complete` | `PATCH` | Auth | Finalize transaction fulfillment |
+| **Analytics** | `/api/analytics/farmer-summary` | `GET` | Farmer | Get revenue & dynamic transport analytics |
+| **Analytics** | `/api/analytics/buyer-summary` | `GET` | Buyer | Get buyer spending & transaction stats |
+| **Analytics** | `/api/analytics/market-summary` | `GET` | Public | Get market-wide trading summary |
+| **Analytics** | `/api/analytics/price-trend` | `GET` | Public | Fetch price trend analytics |
+| **Notifications** | `/api/notifications` | `GET` | Auth | Fetch user in-app notifications |
+| **Notifications** | `/api/notifications/:id/read` | `PATCH` | Auth | Mark notification as read |
 
 ---
 
@@ -207,7 +226,7 @@ npm run dev
 1. **Role-Based Access Control (RBAC)**: Strict middleware enforces endpoint access control based on user roles (`FARMER`, `BUYER`, `ADMIN`).
 2. **Resource Ownership Guard**: Modifications to lots, offers, counter-offers, and transactions require strict verification matching `req.user.id` against resource owner fields.
 3. **State Transition Safety**: Closed, sold, or cancelled lots reject new offer submissions and state modifications.
-4. **API Rate Limiting**: Production middleware throttles excessive requests (100 requests per 15-minute window per IP) to mitigate brute-force and denial-of-service risks.
+4. **API Rate Limiting**: Production middleware throttles excessive authentication requests (10 requests per 15-minute window) and API calls.
 5. **Input Validation**: All request bodies undergo strict validation for positive non-zero prices, quantities, valid MongoDB ObjectIds, and valid enum values.
 
 ---
