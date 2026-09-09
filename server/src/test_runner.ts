@@ -106,20 +106,43 @@ async function main() {
   assert('Buyer login succeeds', buyerLogin.status === 200, buyerLogin.data);
   const buyerToken: string = buyerLogin.data?.token || '';
 
-  // Register a secondary buyer for authorization testing
-  const buyer2Reg = await post(anon, '/auth/register', {
+  const adminLogin = await post(anon, '/auth/demo-login', { role: 'ADMIN' });
+  const adminToken: string = adminLogin.data?.token || '';
+
+  // Register/login a secondary buyer for authorization testing
+  let buyer2Reg = await post(anon, '/auth/register', {
     name: 'Secondary Buyer',
     phone: '+919998887776',
     password: 'Password123',
     role: 'BUYER',
-    location: { district: 'Kolar', state: 'Karnataka' }
+    location: { district: 'Kolar', state: 'Karnataka', coordinates: { lat: 13.13, lng: 78.13 } }
   });
-  const buyer2Token: string = buyer2Reg.data?.token || buyerToken;
-  assert('Buyer2 registration/login succeeds', buyer2Reg.status === 201 || buyer2Reg.status === 400 || buyer2Token !== '', buyer2Reg.data);
+  if (buyer2Reg.status === 400) {
+    buyer2Reg = await post(anon, '/auth/login', { phone: '+919998887776', password: 'Password123' });
+  }
+  const buyer2Token: string = buyer2Reg.data?.token || '';
+
+  // Register/login a secondary farmer for transaction authorization testing
+  let farmer2Reg = await post(anon, '/auth/register', {
+    name: 'Secondary Farmer',
+    phone: '+919998887775',
+    password: 'Password123',
+    role: 'FARMER',
+    location: { district: 'Anantapur', state: 'Andhra Pradesh', coordinates: { lat: 14.68, lng: 77.60 } }
+  });
+  if (farmer2Reg.status === 400) {
+    farmer2Reg = await post(anon, '/auth/login', { phone: '+919998887775', password: 'Password123' });
+  }
+  const farmer2Token: string = farmer2Reg.data?.token || '';
+
+  assert('Buyer2 registration/login succeeds', buyer2Token !== '', buyer2Reg.data);
+  assert('Farmer2 registration/login succeeds', farmer2Token !== '', farmer2Reg.data);
 
   const farmer = authClient(farmerToken);
+  const farmer2 = authClient(farmer2Token);
   const buyer = authClient(buyerToken);
   const buyer2 = authClient(buyer2Token);
+  const admin = authClient(adminToken);
 
   const realCommodityId = await getCommodityId(anon);
   const invalidCommodityId = await getInvalidCommodityId();
@@ -338,6 +361,70 @@ async function main() {
 
   const lotsResp = await get(buyer, '/lots');
   assert('E2: Buyer can see all lots', lotsResp.status === 200, lotsResp.data);
+
+  // ── F. Transaction Status Authorization ──────────────────────────────────
+  console.log('\n── F. Transaction Status Authorization ──────');
+
+  if (realCommodityId) {
+    const authTestLot = await post(farmer, '/lots', {
+      commodityId: realCommodityId,
+      commodityName: 'Tomato',
+      quantityKg: 200,
+      askingPricePerKg: 30,
+      qualityGrade: 'A',
+      harvestDate: new Date().toISOString()
+    });
+    const authTestLotId = authTestLot.data?.lot?._id;
+
+    if (authTestLotId) {
+      const authTestOffer = await post(buyer, `/lots/${authTestLotId}/offers`, {
+        pricePerKg: 30,
+        transportationTerms: 'BUYER_PICKUP',
+        paymentTerms: 'Immediate Cash / UPI',
+        validDays: 2
+      });
+      const authTestOfferId = authTestOffer.data?.offer?._id;
+
+      if (authTestOfferId) {
+        const acceptAuthOffer = await post(farmer, `/lots/offers/${authTestOfferId}/accept`, {});
+        const txId = acceptAuthOffer.data?.transaction?._id;
+
+        if (txId) {
+          // 1. Buyer can GET/view the transaction
+          const buyerGetTx = await get(buyer, `/transactions/${txId}`);
+          assert('F1: Buyer can view associated transaction (200)', buyerGetTx.status === 200, buyerGetTx.data);
+
+          // 2. Buyer attempts status update -> 403
+          const buyerUpdateStatus = await patch(buyer, `/transactions/${txId}/status`, {
+            status: 'PICKUP_SCHEDULED',
+            note: 'Buyer trying to change status'
+          });
+          assert('F2: Buyer status update attempt → 403 Forbidden', buyerUpdateStatus.status === 403, buyerUpdateStatus.data?.error);
+
+          // 3. Unauthorized farmer attempts another farmer's transaction -> 403
+          const unauthFarmerUpdateStatus = await patch(farmer2, `/transactions/${txId}/status`, {
+            status: 'PICKUP_SCHEDULED',
+            note: 'Unauthorized farmer trying to change status'
+          });
+          assert('F3: Unauthorized farmer status update attempt → 403 Forbidden', unauthFarmerUpdateStatus.status === 403, unauthFarmerUpdateStatus.data?.error);
+
+          // 4. Authorized farmer status update -> succeeds (200)
+          const authFarmerUpdateStatus = await patch(farmer, `/transactions/${txId}/status`, {
+            status: 'PICKUP_SCHEDULED',
+            note: 'Pickup scheduled by farmer'
+          });
+          assert('F4: Authorized farmer status update → 200 OK', authFarmerUpdateStatus.status === 200, authFarmerUpdateStatus.data);
+
+          // 5. Admin status update -> succeeds (200)
+          const adminUpdateStatus = await patch(admin, `/transactions/${txId}/status`, {
+            status: 'IN_TRANSIT',
+            note: 'In transit status updated by admin'
+          });
+          assert('F5: Admin status update → 200 OK', adminUpdateStatus.status === 200, adminUpdateStatus.data);
+        }
+      }
+    }
+  }
 
   // ── Summary ───────────────────────────────────────────────────────────────
   console.log('\n══════════════════════════════════════════════');

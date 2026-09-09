@@ -94,16 +94,14 @@ export const updateTransactionStatus = async (req: AuthRequest, res: Response) =
     const transaction = await Transaction.findById(id);
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
 
-    // Authorization Guard: Only associated farmer, buyer, or ADMIN can update status
+    // Authorization Guard: Only associated FARMER or ADMIN can update transaction status (BUYER is not allowed)
     const farmerIdStr = transaction.farmerId.toString();
-    const buyerIdStr = transaction.buyerId.toString();
 
     const isAssociatedFarmer = req.user.role === 'FARMER' && farmerIdStr === req.user.id;
-    const isAssociatedBuyer = req.user.role === 'BUYER' && buyerIdStr === req.user.id;
     const isAdmin = req.user.role === 'ADMIN';
 
-    if (!isAssociatedFarmer && !isAssociatedBuyer && !isAdmin) {
-      return res.status(403).json({ error: 'Access denied. Only parties associated with this transaction or an Admin can update status.' });
+    if (!isAssociatedFarmer && !isAdmin) {
+      return res.status(403).json({ error: 'Access denied. Buyers are not allowed to change transaction status, and farmers can only update their own transactions.' });
     }
 
     transaction.status = status;
