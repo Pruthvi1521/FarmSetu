@@ -359,7 +359,7 @@ export const acceptOffer = async (req: AuthRequest, res: Response) => {
       type: 'OFFER_ACCEPTED',
       title: 'Your Offer Was Accepted!',
       message: `The farmer accepted your offer of ₹${offer.pricePerKg}/kg for ${lot.commodityName} (${lot.quantityKg} kg). A transaction has been created.`,
-      link: `/transactions`
+      link: `/buyer/transactions`
     });
 
     await createNotification({
@@ -382,7 +382,7 @@ export const acceptOffer = async (req: AuthRequest, res: Response) => {
         type: 'OFFER_REJECTED',
         title: 'Offer Not Selected',
         message: `Your offer on the ${lot.commodityName} lot (${lot.quantityKg} kg) was not selected. The farmer chose another buyer.`,
-        link: `/marketplace`
+        link: `/buyer/marketplace`
       });
     }
 
@@ -430,7 +430,7 @@ export const cancelLot = async (req: AuthRequest, res: Response) => {
           type: 'OFFER_REJECTED',
           title: 'Lot Cancelled',
           message: `The farmer cancelled the ${lot.commodityName} lot (${lot.quantityKg} kg). Your offer has been withdrawn.`,
-          link: `/marketplace`
+          link: `/buyer/marketplace`
         });
       }
     }

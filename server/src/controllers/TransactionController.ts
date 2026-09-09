@@ -117,14 +117,13 @@ export const updateTransactionStatus = async (req: AuthRequest, res: Response) =
 
     // --- Notifications for both parties ---
     const statusLabel = status.replace(/_/g, ' ');
-    const notifPayload = {
+    const notifBase = {
       type: 'TRANSACTION_UPDATED' as const,
       title: `Transaction Status: ${statusLabel}`,
-      message: `Your transaction for ${transaction.commodityName} (${transaction.quantityKg} kg) is now: ${statusLabel}.`,
-      link: `/transactions`
+      message: `Your transaction for ${transaction.commodityName} (${transaction.quantityKg} kg) is now: ${statusLabel}.`
     };
-    await createNotification({ userId: transaction.farmerId.toString(), ...notifPayload });
-    await createNotification({ userId: transaction.buyerId.toString(), ...notifPayload });
+    await createNotification({ userId: transaction.farmerId.toString(), ...notifBase, link: '/farmer/transactions' });
+    await createNotification({ userId: transaction.buyerId.toString(), ...notifBase, link: '/buyer/transactions' });
 
     return res.json({ message: 'Transaction status updated', transaction });
   } catch (error: any) {

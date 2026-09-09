@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ISaleLot, IOffer } from '../../../shared/types';
 import { lotApi, marketApi } from '../services/api';
 import { SubmitOfferModal } from '../components/buyer/SubmitOfferModal';
+import { TransactionTracker } from '../components/farmer/TransactionTracker';
 import { BuyerAnalyticsView } from '../components/buyer/BuyerAnalyticsView';
 import { NotificationBell } from '../components/common/NotificationBell';
 import {
@@ -15,13 +17,27 @@ import {
   AlertCircle,
   Eye,
   X,
-  BarChart3
+  BarChart3,
+  Receipt
 } from 'lucide-react';
 
-type Tab = 'marketplace' | 'analytics';
+type Tab = 'marketplace' | 'analytics' | 'transactions';
 
 export const BuyerDashboard: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<Tab>('marketplace');
+
+  // Sync active tab from URL path so notification "View" links land on the right tab
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/transactions')) {
+      setActiveTab('transactions');
+    } else if (path.includes('/analytics')) {
+      setActiveTab('analytics');
+    } else {
+      setActiveTab('marketplace');
+    }
+  }, [location.pathname]);
   const [lots, setLots] = useState<ISaleLot[]>([]);
   const [commodities, setCommodities] = useState<Array<{ name: string }>>([]);
   const [selectedCrop, setSelectedCrop] = useState<string>('');
@@ -103,6 +119,17 @@ export const BuyerDashboard: React.FC = () => {
                 <BarChart3 className="w-4 h-4" />
                 <span>My Analytics</span>
               </button>
+              <button
+                onClick={() => setActiveTab('transactions')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'transactions'
+                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Receipt className="w-4 h-4" />
+                <span>My Transactions</span>
+              </button>
             </div>
 
             {/* Notification bell */}
@@ -114,6 +141,9 @@ export const BuyerDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* ─── Analytics Tab ─────────────────────────────────────────────────── */}
         {activeTab === 'analytics' && <BuyerAnalyticsView />}
+
+        {/* ─── Transactions Tab ────────────────────────────────────────────────── */}
+        {activeTab === 'transactions' && <TransactionTracker />}
 
         {/* ─── Marketplace Tab ────────────────────────────────────────────────── */}
         {activeTab === 'marketplace' && (
