@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ITransaction, TransactionStatus } from '../../../../shared/types';
 import { transactionApi } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { Receipt, CheckCircle2, Truck, Package, Clock, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
 
 export const TransactionTracker: React.FC = () => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -161,8 +163,8 @@ export const TransactionTracker: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status Advancement CTA */}
-                {nextStatusMap[tx.status] && (
+                {/* Status Advancement CTA — FARMER and ADMIN only (BUYER cannot change status) */}
+                {user?.role !== 'BUYER' && nextStatusMap[tx.status] && (
                   <div className="pt-2 flex justify-end">
                     <button
                       onClick={() => handleAdvanceStatus(tx)}
