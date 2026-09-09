@@ -4,9 +4,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { FarmerProfile } from '../models/FarmerProfile';
 import { BuyerProfile } from '../models/BuyerProfile';
-import { AuthRequest } from '../middleware/authMiddleware';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'farmsetu_super_secret_jwt_key_sih2026_prototype';
+import { AuthRequest, getJwtSecret } from '../middleware/authMiddleware';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -52,7 +50,7 @@ export const register = async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role, name: newUser.name, phone: newUser.phone, email: newUser.email },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -93,7 +91,7 @@ export const login = async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role, name: user.name, phone: user.phone, email: user.email },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -134,7 +132,7 @@ export const demoLogin = async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role, name: user.name, phone: user.phone, email: user.email },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 

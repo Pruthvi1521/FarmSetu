@@ -16,8 +16,7 @@ export async function connectDB(): Promise<string> {
     console.warn('⚠️ Local MongoDB daemon not running. Spinning up embedded MongoMemoryServer...');
     mongoServer = await MongoMemoryServer.create({
       instance: {
-        dbName: 'farmsetu',
-        port: 27017
+        dbName: 'farmsetu'
       }
     });
     const uri = mongoServer.getUri();

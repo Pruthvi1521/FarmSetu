@@ -12,6 +12,17 @@ export interface AuthRequest extends Request {
   };
 }
 
+export const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET environment variable is not configured.');
+    }
+    return 'dev_secret_key_farmsetu_2026';
+  }
+  return secret;
+};
+
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -21,11 +32,14 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'farmsetu_super_secret_jwt_key_sih2026_prototype';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as any;
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message && err.message.includes('JWT_SECRET')) {
+      return res.status(500).json({ error: 'Server configuration error: JWT secret missing.' });
+    }
     return res.status(403).json({ error: 'Invalid or expired token.' });
   }
 };

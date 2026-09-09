@@ -2,9 +2,36 @@ import { Response } from 'express';
 import { Transaction } from '../models/Transaction';
 import { SaleLot } from '../models/SaleLot';
 import { MarketPrice } from '../models/MarketPrice';
+import { User } from '../models/User';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { TransportService } from '../services/TransportService';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// ─── Helper: build a rolling-12-month ordered list of YYYY-MM keys ─────────────
+
+/**
+ * Returns an array of 12 YYYY-MM strings covering the 12 most recent calendar
+ * months, ordered chronologically (oldest first), e.g.:
+ *   ['2025-10', '2025-11', ..., '2026-09']
+ */
+function buildRolling12MonthKeys(now: Date): string[] {
+  const keys: string[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    keys.push(`${year}-${month}`);
+  }
+  return keys;
+}
+
+/** Returns a YYYY-MM key for the given Date. */
+function toYearMonthKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
 
 // ─── Farmer Analytics ─────────────────────────────────────────────────────────
 
@@ -26,7 +53,9 @@ export const getFarmerAnalytics = async (req: AuthRequest, res: Response) => {
     let totalQuantitySoldKg = 0;
     let bestPriceRealizedPerKg = 0;
     const cropTotals: Record<string, { amount: number; quantityKg: number }> = {};
-    const monthlyMap: Record<number, { revenue: number; count: number }> = {};
+
+    // Year-aware monthly map: keyed by "YYYY-MM"
+    const monthlyMap: Record<string, { revenue: number; count: number }> = {};
 
     revenueTransactions.forEach((tx) => {
       totalRevenue += tx.totalAmount;
@@ -40,10 +69,10 @@ export const getFarmerAnalytics = async (req: AuthRequest, res: Response) => {
       cropTotals[crop].amount += tx.totalAmount;
       cropTotals[crop].quantityKg += tx.quantityKg;
 
-      const month = new Date(tx.createdAt).getMonth(); // 0-indexed
-      if (!monthlyMap[month]) monthlyMap[month] = { revenue: 0, count: 0 };
-      monthlyMap[month].revenue += tx.totalAmount;
-      monthlyMap[month].count += 1;
+      const key = toYearMonthKey(new Date(tx.createdAt));
+      if (!monthlyMap[key]) monthlyMap[key] = { revenue: 0, count: 0 };
+      monthlyMap[key].revenue += tx.totalAmount;
+      monthlyMap[key].count += 1;
     });
 
     const averagePricePerKg =
@@ -61,14 +90,16 @@ export const getFarmerAnalytics = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    // Build full 12-month array (last 12 calendar months relative to now)
+    // Build rolling 12-month output array (chronological, year-aware)
     const now = new Date();
-    const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
-      const monthIdx = (now.getMonth() - 11 + i + 12) % 12;
+    const monthKeys = buildRolling12MonthKeys(now);
+    const monthlyRevenue = monthKeys.map((key) => {
+      const [yearStr, monthStr] = key.split('-');
+      const monthIdx = parseInt(monthStr, 10) - 1; // 0-indexed for MONTH_LABELS
       return {
         month: MONTH_LABELS[monthIdx],
-        revenue: monthlyMap[monthIdx]?.revenue ?? 0,
-        count: monthlyMap[monthIdx]?.count ?? 0
+        revenue: monthlyMap[key]?.revenue ?? 0,
+        count: monthlyMap[key]?.count ?? 0
       };
     });
 
@@ -78,9 +109,50 @@ export const getFarmerAnalytics = async (req: AuthRequest, res: Response) => {
       quantityKg: data.quantityKg
     }));
 
-    // Transport cost: derive from total sold lots' transport records (approximated from transaction)
-    // For now compute from lot expected values if present; otherwise use a simple per-km estimate
-    const totalTransportCostPaid = Math.round(totalRevenue * 0.05); // ~5% of revenue is typical transport cost
+    // ─── Transport cost: derive from actual transaction data ─────────────────────
+    // Strategy:
+    //   - FARMER_DELIVERY: farmer pays transport → estimate via TransportService
+    //     using farmer's and buyer's stored coordinates.
+    //   - BUYER_PICKUP: buyer collects; farmer pays nothing → cost = 0.
+    //   - If coordinates are unavailable, cost for that transaction = 0 (no fabrication).
+
+    // Fetch farmer's coordinates once (needed for FARMER_DELIVERY transactions)
+    const farmerUser = await User.findById(farmerId).lean();
+    const farmerCoords = farmerUser?.location?.coordinates;
+
+    let totalTransportCostPaid = 0;
+
+    // Only process FARMER_DELIVERY transactions (BUYER_PICKUP = 0 cost to farmer)
+    const farmerDeliveryTxs = revenueTransactions.filter(
+      (tx) => tx.transportationTerms === 'FARMER_DELIVERY'
+    );
+
+    if (farmerDeliveryTxs.length > 0 && farmerCoords?.lat && farmerCoords?.lng) {
+      // Batch-fetch buyer coordinates for involved buyers
+      const buyerIds = [...new Set(farmerDeliveryTxs.map((tx) => tx.buyerId.toString()))];
+      const buyerUsers = await User.find({ _id: { $in: buyerIds } })
+        .select('location.coordinates')
+        .lean();
+      const buyerCoordsMap: Record<string, { lat: number; lng: number }> = {};
+      buyerUsers.forEach((u) => {
+        if (u.location?.coordinates?.lat && u.location?.coordinates?.lng) {
+          buyerCoordsMap[u._id.toString()] = u.location.coordinates;
+        }
+      });
+
+      for (const tx of farmerDeliveryTxs) {
+        const buyerCoords = buyerCoordsMap[tx.buyerId.toString()];
+        if (buyerCoords) {
+          const estimate = TransportService.estimateTransport(
+            farmerCoords,
+            buyerCoords,
+            tx.quantityKg
+          );
+          totalTransportCostPaid += estimate.estimatedCost;
+        }
+        // If buyer coordinates unavailable, add 0 (do not fabricate)
+      }
+    }
 
     return res.json({
       totalRevenue,
@@ -117,7 +189,9 @@ export const getBuyerAnalytics = async (req: AuthRequest, res: Response) => {
     let totalSpend = 0;
     let totalQuantityPurchasedKg = 0;
     const cropTotals: Record<string, { spend: number; quantityKg: number }> = {};
-    const monthlyMap: Record<number, { spend: number; count: number }> = {};
+
+    // Year-aware monthly map: keyed by "YYYY-MM"
+    const monthlyMap: Record<string, { spend: number; count: number }> = {};
 
     transactions.forEach((tx) => {
       totalSpend += tx.totalAmount;
@@ -128,10 +202,10 @@ export const getBuyerAnalytics = async (req: AuthRequest, res: Response) => {
       cropTotals[crop].spend += tx.totalAmount;
       cropTotals[crop].quantityKg += tx.quantityKg;
 
-      const month = new Date(tx.createdAt).getMonth();
-      if (!monthlyMap[month]) monthlyMap[month] = { spend: 0, count: 0 };
-      monthlyMap[month].spend += tx.totalAmount;
-      monthlyMap[month].count += 1;
+      const key = toYearMonthKey(new Date(tx.createdAt));
+      if (!monthlyMap[key]) monthlyMap[key] = { spend: 0, count: 0 };
+      monthlyMap[key].spend += tx.totalAmount;
+      monthlyMap[key].count += 1;
     });
 
     const averagePurchasePricePerKg =
@@ -148,13 +222,16 @@ export const getBuyerAnalytics = async (req: AuthRequest, res: Response) => {
       }
     });
 
+    // Build rolling 12-month output array (chronological, year-aware)
     const now = new Date();
-    const monthlySpend = Array.from({ length: 12 }, (_, i) => {
-      const monthIdx = (now.getMonth() - 11 + i + 12) % 12;
+    const monthKeys = buildRolling12MonthKeys(now);
+    const monthlySpend = monthKeys.map((key) => {
+      const [, monthStr] = key.split('-');
+      const monthIdx = parseInt(monthStr, 10) - 1;
       return {
         month: MONTH_LABELS[monthIdx],
-        spend: monthlyMap[monthIdx]?.spend ?? 0,
-        count: monthlyMap[monthIdx]?.count ?? 0
+        spend: monthlyMap[key]?.spend ?? 0,
+        count: monthlyMap[key]?.count ?? 0
       };
     });
 

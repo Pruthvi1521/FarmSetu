@@ -1,8 +1,13 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Transaction } from '../models/Transaction';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { TransactionStatus } from '../../../shared/types';
 import { createNotification } from '../models/Notification';
+
+function isValidObjectId(id: string): boolean {
+  return mongoose.Types.ObjectId.isValid(id);
+}
 
 export const getUserTransactions = async (req: AuthRequest, res: Response) => {
   try {
@@ -27,9 +32,15 @@ export const getUserTransactions = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getTransactionDetails = async (req: Request, res: Response) => {
+export const getTransactionDetails = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid transaction ID format' });
+    }
+
     const transaction = await Transaction.findById(id)
       .populate('farmerId', 'name phone location')
       .populate('buyerId', 'name phone location')
@@ -38,6 +49,19 @@ export const getTransactionDetails = async (req: Request, res: Response) => {
       .lean();
 
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+
+    // Authorization Guard: Only associated farmer, buyer, or ADMIN can view details
+    const farmerIdStr = (transaction.farmerId as any)?._id ? (transaction.farmerId as any)._id.toString() : transaction.farmerId.toString();
+    const buyerIdStr = (transaction.buyerId as any)?._id ? (transaction.buyerId as any)._id.toString() : transaction.buyerId.toString();
+
+    const isAssociatedFarmer = req.user.role === 'FARMER' && farmerIdStr === req.user.id;
+    const isAssociatedBuyer = req.user.role === 'BUYER' && buyerIdStr === req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (!isAssociatedFarmer && !isAssociatedBuyer && !isAdmin) {
+      return res.status(403).json({ error: 'Access denied. You do not have permission to view this transaction.' });
+    }
+
     return res.json(transaction);
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Error fetching transaction details' });
@@ -46,7 +70,13 @@ export const getTransactionDetails = async (req: Request, res: Response) => {
 
 export const updateTransactionStatus = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+
     const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid transaction ID format' });
+    }
+
     const { status, note } = req.body;
 
     const validStatuses: TransactionStatus[] = [
@@ -63,6 +93,18 @@ export const updateTransactionStatus = async (req: AuthRequest, res: Response) =
 
     const transaction = await Transaction.findById(id);
     if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+
+    // Authorization Guard: Only associated farmer, buyer, or ADMIN can update status
+    const farmerIdStr = transaction.farmerId.toString();
+    const buyerIdStr = transaction.buyerId.toString();
+
+    const isAssociatedFarmer = req.user.role === 'FARMER' && farmerIdStr === req.user.id;
+    const isAssociatedBuyer = req.user.role === 'BUYER' && buyerIdStr === req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (!isAssociatedFarmer && !isAssociatedBuyer && !isAdmin) {
+      return res.status(403).json({ error: 'Access denied. Only parties associated with this transaction or an Admin can update status.' });
+    }
 
     transaction.status = status;
     transaction.timeline.push({

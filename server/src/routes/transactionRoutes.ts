@@ -9,7 +9,7 @@ import { authenticateToken } from '../middleware/authMiddleware';
 const router = Router();
 
 router.get('/', authenticateToken, getUserTransactions);
-router.get('/:id', getTransactionDetails);
+router.get('/:id', authenticateToken, getTransactionDetails);
 router.patch('/:id/status', authenticateToken, updateTransactionStatus);
 
 export default router;
