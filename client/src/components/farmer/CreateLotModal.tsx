@@ -145,7 +145,7 @@ export const CreateLotModal: React.FC<CreateLotModalProps> = ({
             </label>
             <input
               type="number"
-              step="0.5"
+              step="0.01"
               value={askingPricePerKg}
               onChange={(e) => setAskingPricePerKg(Number(e.target.value))}
               required

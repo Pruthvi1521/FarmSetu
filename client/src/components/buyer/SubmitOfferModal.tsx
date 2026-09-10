@@ -93,7 +93,7 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
             </label>
             <input
               type="number"
-              step="0.5"
+              step="0.01"
               value={pricePerKg}
               onChange={(e) => setPricePerKg(Number(e.target.value))}
               required
