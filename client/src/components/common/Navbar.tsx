@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Sprout, ShoppingBag, BarChart3, UserCheck } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { Sprout, ShoppingBag, BarChart3, Sun, Moon } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, loginDemo, loading } = useAuth();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-700/50">
@@ -21,7 +23,7 @@ export const Navbar: React.FC = () => {
                 FarmSetu
               </span>
               <span className="hidden sm:block text-[10px] text-slate-400 tracking-wider font-medium uppercase">
-                Market Linkages & Price Discovery
+                Farm to Market Linkages
               </span>
             </div>
           </Link>
@@ -65,8 +67,17 @@ export const Navbar: React.FC = () => {
             </Link>
           </nav>
 
-          {/* Role Switcher */}
+          {/* Theme Toggle & Role Switcher */}
           <div className="flex items-center space-x-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-700/80">
+            <button
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              className="p-2 rounded-lg text-amber-300 hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-400" />}
+            </button>
+
             <span className="hidden lg:flex items-center space-x-1 text-xs text-slate-400 font-semibold px-2 py-0.5">
               <span>Account Role:</span>
             </span>
@@ -74,7 +85,7 @@ export const Navbar: React.FC = () => {
             <button
               onClick={() => loginDemo('FARMER')}
               disabled={loading}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 ${
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
                 user?.role === 'FARMER'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -86,7 +97,7 @@ export const Navbar: React.FC = () => {
             <button
               onClick={() => loginDemo('BUYER')}
               disabled={loading}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 ${
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
                 user?.role === 'BUYER'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -98,7 +109,7 @@ export const Navbar: React.FC = () => {
             <button
               onClick={() => loginDemo('ADMIN')}
               disabled={loading}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 ${
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
                 user?.role === 'ADMIN'
                   ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'

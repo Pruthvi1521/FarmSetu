@@ -7,7 +7,156 @@
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: #0f172a;
     color: #f8fafc;
+    margin: 0;
   }
+}
+
+.theme-light {
+  min-height: 100vh;
+  color: #24352a;
+  background: #f7f4eb;
+}
+
+.theme-light body,
+.theme-light .app-shell,
+.theme-light .min-h-screen.bg-slate-950,
+.theme-light .min-h-\[calc\(100vh-4rem\)\] {
+  background-color: #f7f4eb !important;
+  color: #24352a !important;
+}
+
+.theme-light .bg-slate-950, .theme-light .bg-slate-950\/50, .theme-light .bg-slate-950\/60, .theme-light .bg-slate-950\/80 { background-color: #f7f4eb !important; }
+.theme-light .modal-backdrop { background-color: rgba(15, 23, 42, .72) !important; }
+.theme-light .bg-slate-900, .theme-light .bg-slate-900\/40, .theme-light .bg-slate-900\/60, .theme-light .bg-slate-900\/80, .theme-light .bg-slate-900\/90 { background-color: #fffdf7 !important; }
+.theme-light .bg-slate-800, .theme-light .bg-slate-800\/30, .theme-light .bg-slate-800\/40, .theme-light .bg-slate-800\/50, .theme-light .bg-slate-800\/60, .theme-light .bg-slate-800\/80 { background-color: #edf3e9 !important; }
+.theme-light .bg-slate-700, .theme-light .bg-slate-500\/20 { background-color: #dfeadd !important; }
+.theme-light .text-white, .theme-light .text-slate-100 { color: #24352a !important; }
+.theme-light .text-slate-200, .theme-light .text-slate-300 { color: #435548 !important; }
+.theme-light .text-slate-400, .theme-light .text-slate-500 { color: #52705a !important; }
+.theme-light .text-slate-600 { color: #617166 !important; }
+.theme-light .text-slate-700 { color: #435548 !important; }
+.theme-light .border-slate-500\/30, .theme-light .border-slate-600, .theme-light .border-slate-700, .theme-light .border-slate-700\/50, .theme-light .border-slate-700\/60, .theme-light .border-slate-700\/80, .theme-light .border-slate-800, .theme-light .border-slate-800\/50, .theme-light .border-slate-800\/60, .theme-light .border-slate-800\/80, .theme-light .border-slate-950 { border-color: #d2dece !important; }
+.theme-light .divide-slate-800, .theme-light .divide-slate-800\/60 { border-color: #d2dece !important; }
+.theme-light .glass-panel { background: rgba(255, 253, 247, .86); border-color: #e0dacb; }
+.theme-light .glass-panel-gold { background: #fff8e6; border-color: rgba(184, 122, 18, .48); box-shadow: 0 16px 45px rgba(137, 91, 15, .13); }
+.theme-light textarea, .theme-light input, .theme-light select { color: #24352a !important; background-color: #fffdf7 !important; border-color: #d8d2c4 !important; }
+.theme-light .text-emerald-400 { color: #16804d !important; }
+.theme-light .text-emerald-200, .theme-light .text-emerald-300 { color: #17683c !important; }
+.theme-light .text-amber-400 { color: #b26d08 !important; }
+.theme-light .text-amber-300 { color: #925b08 !important; }
+.theme-light .text-teal-300, .theme-light .text-teal-400 { color: #147c75 !important; }
+.theme-light .text-cyan-300, .theme-light .text-blue-300, .theme-light .text-purple-300 { color: #176b73 !important; }
+.theme-light .text-rose-400 { color: #b42318 !important; }
+.theme-light .placeholder-slate-500::placeholder { color: #7b897e !important; }
+.theme-light footer { border-color: #ddd8ca !important; }
+
+/* Market Intelligence uses Recharts' inline dark palette. Recolour it explicitly
+   so the graph and its supporting copy remain clear on the paper light theme. */
+.theme-light .market-intelligence-view .text-slate-600 { color: #617166 !important; }
+.theme-light .market-intelligence-view .recharts-cartesian-grid line { stroke: #d7e1d3 !important; }
+.theme-light .market-intelligence-view .recharts-cartesian-axis-line,
+.theme-light .market-intelligence-view .recharts-cartesian-axis-tick-line { stroke: #aebcad !important; }
+.theme-light .market-intelligence-view .recharts-cartesian-axis-tick-value { fill: #617166 !important; }
+.theme-light .market-intelligence-view .recharts-legend-item-text { color: #526357 !important; }
+.theme-light .market-intelligence-view .recharts-label { fill: #9a620d !important; }
+.theme-light .market-intelligence-view .recharts-default-tooltip {
+  background-color: #fffdf7 !important;
+  border-color: #cbd9c7 !important;
+  box-shadow: 0 10px 24px rgba(62, 82, 51, .12);
+}
+
+/* Light-mode interaction states: warm, visible, and consistent across the existing screens. */
+.theme-light button, .theme-light a { transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.theme-light [class*="hover:bg-slate-800"]:hover,
+.theme-light [class*="hover:bg-slate-700"]:hover,
+.theme-light [class*="hover:bg-slate-800/60"]:hover {
+  background-color: #e6efe4 !important;
+  color: #245b3c !important;
+  border-color: #b6cfb5 !important;
+}
+.theme-light [class*="hover:text-white"]:hover,
+.theme-light [class*="hover:text-slate-200"]:hover,
+.theme-light [class*="hover:text-slate-300"]:hover {
+  color: #245b3c !important;
+}
+.theme-light [class*="hover:border-slate-700"]:hover,
+.theme-light [class*="hover:border-slate-800"]:hover {
+  border-color: #8fbd91 !important;
+  box-shadow: 0 10px 24px rgba(55, 93, 54, .10);
+}
+.theme-light main .glass-panel:hover {
+  border-color: #b7cfb4;
+  box-shadow: 0 12px 28px rgba(62, 82, 51, .10);
+}
+.theme-light [class*="hover:bg-emerald-950"]:hover {
+  background-color: #e4f2e5 !important;
+  color: #17683c !important;
+}
+
+/* Image captions always sit on an opaque, high-contrast surface. */
+.market-story-strip img,
+.farmer-story-strip img { filter: saturate(.96) contrast(1.02); }
+.market-story-strip figcaption,
+.farmer-story-strip .text-white { text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
+
+/* Keep photo-story copy white even when light mode changes ordinary page headings. */
+.theme-light .market-story-strip,
+.theme-light .market-story-strip .text-white,
+.theme-light .farmer-story-strip .text-white,
+.theme-light .image-overlay-text,
+.theme-light .image-story-card .text-white {
+  color: #fff !important;
+}
+.theme-light .market-story-strip .text-emerald-200,
+.theme-light .farmer-story-strip .text-emerald-200,
+.theme-light .image-story-card .text-emerald-200 {
+  color: #d1fae5 !important;
+}
+.theme-light .farmer-story-scroll__visual .text-white,
+.theme-light .farmer-story-scroll__visual .farmer-story-copy {
+  color: #fff !important;
+}
+.theme-light .farmer-story-scroll__visual .text-emerald-200 {
+  color: #d1fae5 !important;
+}
+
+/* Editorial farm direction: quiet paper tones, strong type, local storytelling. */
+.landing-editorial .landing-heading,
+.landing-editorial .landing-heading span,
+.landing-editorial h2,
+.landing-editorial h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: -.035em;
+}
+.landing-editorial .landing-heading span {
+  color: #b87924;
+}
+.theme-dark .landing-editorial .landing-heading span { color: #f2bf72; }
+.theme-light .landing-editorial .landing-heading { color: #274633 !important; }
+.theme-light .landing-editorial .landing-heading span { color: #ad6d1f !important; }
+.theme-light .landing-editorial .glass-panel {
+  box-shadow: 0 8px 24px rgba(84, 69, 39, .06);
+}
+.landing-editorial .image-story-card,
+.landing-editorial .market-story-strip { border-radius: 1rem; }
+.farmer-story-chapter { opacity: 0; border: 0; }
+.farmer-story-copy { animation: storyCopyIn .45s ease both; }
+@keyframes storyCopyIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.farmer-story-scroll__stage { position: relative; }
+.farmer-story-scroll__visual { position: sticky; top: 5rem; z-index: 1; }
+.farmer-story-scroll__visual img { filter: saturate(.95) contrast(1.05); }
+.farmer-story-scroll__chapters {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * (100vh - 6rem));
+  pointer-events: none;
+}
+.farmer-story-chapter { pointer-events: none; }
+.farmer-story-scroll__visual { overflow: hidden; }
+@media (max-width: 1023px) {
+  .farmer-story-scroll__visual { top: 4.5rem; height: calc(100vh - 5rem); min-height: 500px; }
+  .farmer-story-scroll__chapters { margin-top: calc(-1 * (100vh - 5rem)); }
+  .farmer-story-chapter { min-height: calc(100vh - 5rem); }
 }
 
 /* Glassmorphic card styling */

@@ -45,7 +45,7 @@ export const QuickInputSection: React.FC<QuickInputSectionProps> = ({
             <Sparkles className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white">Tell us what you have.</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">What are you taking to market?</h2>
             <p className="text-sm text-slate-400">
               Speak in your language or type to instantly match your harvest to peak markets, prices, and buyers.
             </p>
