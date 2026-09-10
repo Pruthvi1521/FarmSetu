@@ -23,18 +23,38 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || 'An error occurred during request execution.');
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers
+    });
+  } catch (netErr: any) {
+    throw new Error(netErr.message || 'Network error: Server is unreachable. Please check if backend service is running.');
   }
 
-  return data as T;
+  const text = await response.text();
+  let data: any = null;
+
+  if (text && text.trim().length > 0) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Server returned non-JSON content (e.g. HTML error page or plain text)
+      if (!response.ok) {
+        const cleanSnippet = text.replace(/<[^>]*>/g, '').trim().slice(0, 150);
+        throw new Error(`Server error (${response.status}): ${cleanSnippet || response.statusText || 'Unexpected response'}`);
+      }
+      throw new Error(`Invalid response format from server (HTTP ${response.status}). Expected JSON.`);
+    }
+  }
+
+  if (!response.ok) {
+    const errorMsg = data?.error || data?.message || `Request failed with HTTP status ${response.status}.`;
+    throw new Error(errorMsg);
+  }
+
+  return (data ?? {}) as T;
 }
 
 export const marketApi = {

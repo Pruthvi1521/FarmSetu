@@ -61,4 +61,13 @@ app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
 });
 
+// Global Express Error Handler (Guarantees structured JSON error responses instead of HTML)
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(`❌ Global Server Error on ${req.method} ${req.url}:`, err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({
+    error: err.message || 'Internal server error occurred.'
+  });
+});
+
 export default app;

@@ -91,6 +91,19 @@ export const getMarketRecommendation = async (req: Request, res: Response) => {
       };
     }
 
+    // Validate parsed/passed numerical inputs
+    const numQty = Number(parsedEntity.quantityKg);
+    if (isNaN(numQty) || !isFinite(numQty) || numQty <= 0) {
+      return res.status(400).json({ error: 'quantityKg must be a valid positive number greater than 0.' });
+    }
+    parsedEntity.quantityKg = numQty;
+
+    const numDays = Number(parsedEntity.availabilityDays);
+    if (isNaN(numDays) || !isFinite(numDays) || numDays < 0) {
+      return res.status(400).json({ error: 'availabilityDays must be a valid non-negative number.' });
+    }
+    parsedEntity.availabilityDays = numDays;
+
     // Resolve commodityId if missing
     let targetCommodityId = parsedEntity.commodityId || commodityId;
     if (!targetCommodityId) {
