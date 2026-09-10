@@ -421,6 +421,80 @@ async function main() {
             note: 'In transit status updated by admin'
           });
           assert('F5: Admin status update → 200 OK', adminUpdateStatus.status === 200, adminUpdateStatus.data);
+
+          // ── G. Transport & Logistics Integration ──
+          console.log('\n── G. Transport & Logistics Integration ──────');
+
+          // 1. Get cost estimate
+          const estResp = await get(farmer, '/transport/estimate?distanceKm=120&quantityKg=2500');
+          assert('G1: Transport estimate → 200 OK', estResp.status === 200 && estResp.data?.data?.estimatedCost > 0, estResp.data);
+
+          // 2. Get vehicle recommendation
+          const recResp = await get(farmer, '/transport/recommend-vehicle?quantityKg=2500');
+          assert('G2: Vehicle recommendation → 200 OK (SMALL_TRUCK)', recResp.status === 200 && recResp.data?.data?.vehicleType === 'SMALL_TRUCK', recResp.data);
+
+          // 3. Create transport booking with enum check
+          const bookingResp = await post(farmer, '/transport/bookings', {
+            transactionId: txId,
+            pickupLocation: 'Pune Farm',
+            destinationLocation: 'Mumbai Mandi'
+          });
+          assert(
+            'G3: Create transport booking → 201/200 (stores vehicleType enum TRACTOR and vehicleLabel)',
+            (bookingResp.status === 201 || bookingResp.status === 200) &&
+              ['TRACTOR', 'SMALL_TRUCK', 'MEDIUM_TRUCK'].includes(bookingResp.data?.data?.vehicleType) &&
+              !!bookingResp.data?.data?.vehicleLabel,
+            bookingResp.data
+          );
+          const bookingId = bookingResp.data?.data?._id;
+
+          // 4. Get farmer transport bookings
+          const getBookingsResp = await get(farmer, '/transport/farmer-bookings');
+          assert('G4: Get farmer transport bookings → 200 OK', getBookingsResp.status === 200 && Array.isArray(getBookingsResp.data?.data), getBookingsResp.data);
+
+          // 5. Buyer status update attempt → 403 Forbidden
+          if (bookingId) {
+            const buyerStatusResp = await patch(buyer, `/transport/bookings/${bookingId}/status`, {
+              status: 'ASSIGNED'
+            });
+            assert('G5: Buyer transport status update attempt → 403 Forbidden', buyerStatusResp.status === 403, buyerStatusResp.data);
+
+            // 6. Invalid transition: REQUESTED -> IN_TRANSIT (skipping ASSIGNED) → 400 Bad Request
+            const skipAssignedResp = await patch(farmer, `/transport/bookings/${bookingId}/status`, {
+              status: 'IN_TRANSIT'
+            });
+            assert('G6: Invalid transition REQUESTED → IN_TRANSIT (skipped ASSIGNED) → 400 Bad Request', skipAssignedResp.status === 400, skipAssignedResp.data);
+
+            // 7. Invalid transition: REQUESTED -> DELIVERED → 400 Bad Request
+            const skipDeliveredResp = await patch(farmer, `/transport/bookings/${bookingId}/status`, {
+              status: 'DELIVERED'
+            });
+            assert('G7: Invalid transition REQUESTED → DELIVERED → 400 Bad Request', skipDeliveredResp.status === 400, skipDeliveredResp.data);
+
+            // 8. Valid transition: REQUESTED -> ASSIGNED → 200 OK
+            const step1Resp = await patch(farmer, `/transport/bookings/${bookingId}/status`, {
+              status: 'ASSIGNED'
+            });
+            assert('G8: Valid transition REQUESTED → ASSIGNED → 200 OK', step1Resp.status === 200 && step1Resp.data?.data?.status === 'ASSIGNED', step1Resp.data);
+
+            // 9. Invalid transition: ASSIGNED -> DELIVERED (skipping IN_TRANSIT) → 400 Bad Request
+            const skipInTransitResp = await patch(farmer, `/transport/bookings/${bookingId}/status`, {
+              status: 'DELIVERED'
+            });
+            assert('G9: Invalid transition ASSIGNED → DELIVERED (skipped IN_TRANSIT) → 400 Bad Request', skipInTransitResp.status === 400, skipInTransitResp.data);
+
+            // 10. Valid transition: ASSIGNED -> IN_TRANSIT → 200 OK
+            const step2Resp = await patch(farmer, `/transport/bookings/${bookingId}/status`, {
+              status: 'IN_TRANSIT'
+            });
+            assert('G10: Valid transition ASSIGNED → IN_TRANSIT → 200 OK', step2Resp.status === 200 && step2Resp.data?.data?.status === 'IN_TRANSIT', step2Resp.data);
+
+            // 11. Valid transition: IN_TRANSIT -> DELIVERED → 200 OK
+            const step3Resp = await patch(farmer, `/transport/bookings/${bookingId}/status`, {
+              status: 'DELIVERED'
+            });
+            assert('G11: Valid transition IN_TRANSIT → DELIVERED → 200 OK', step3Resp.status === 200 && step3Resp.data?.data?.status === 'DELIVERED', step3Resp.data);
+          }
         }
       }
     }

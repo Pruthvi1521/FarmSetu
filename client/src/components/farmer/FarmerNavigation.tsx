@@ -6,6 +6,7 @@ import {
   Package,
   BadgePercent,
   Receipt,
+  Truck,
   BarChart3,
   UserCheck
 } from 'lucide-react';
@@ -18,6 +19,7 @@ export const FarmerNavigation: React.FC = () => {
     { label: 'My Sale Lots', path: '/farmer/lots', icon: Package },
     { label: 'Offers', path: '/farmer/offers', icon: BadgePercent },
     { label: 'Transactions', path: '/farmer/transactions', icon: Receipt },
+    { label: 'Transport', path: '/farmer/transport', icon: Truck },
     { label: 'Analytics', path: '/farmer/analytics', icon: BarChart3 },
     { label: 'Profile', path: '/farmer/profile', icon: UserCheck }
   ];

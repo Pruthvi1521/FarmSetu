@@ -10,6 +10,19 @@ export type TransportTerms = 'BUYER_PICKUP' | 'FARMER_DELIVERY';
 export type DemandLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 export type ActionRecommendation = 'SELL_NOW' | 'WAIT' | 'FIND_BUYER_NOW';
 
+/** Short enum stored in TransportBooking.vehicleType (database value) */
+export type BookingVehicleType = 'TRACTOR' | 'SMALL_TRUCK' | 'MEDIUM_TRUCK';
+
+/** Human-readable labels for UI display — single source of truth */
+export const VEHICLE_LABELS: Record<BookingVehicleType, string> = {
+  TRACTOR: 'Tractor (1–2 Tonnes)',
+  SMALL_TRUCK: 'Small Truck (1–3 Tonnes)',
+  MEDIUM_TRUCK: 'Medium Truck (3–8 Tonnes)'
+};
+
+/** Transport booking lifecycle status */
+export type BookingStatus = 'REQUESTED' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED';
+
 export interface ILocation {
   village?: string;
   city?: string;
@@ -180,6 +193,27 @@ export interface ITransportEstimate {
   estimatedCost: number;
 }
 
+/** Full transport booking record returned by the API */
+export interface ITransportBooking {
+  _id: string;
+  farmerId: string | IUser;
+  transactionId: string | ITransaction;
+  saleLotId: string;
+  pickupLocation: string;
+  destinationLocation: string;
+  distanceKm: number;
+  quantityKg: number;
+  /** Short enum — the persisted database value */
+  vehicleType: BookingVehicleType;
+  /** Human-readable label for UI display */
+  vehicleLabel: string;
+  ratePerKm: number;
+  estimatedCost: number;
+  status: BookingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Input parsing & recommendation DTOs
 export interface IInputParseResult {
   commodity: string;
@@ -273,7 +307,9 @@ export type NotificationType =
   | 'OFFER_REJECTED'
   | 'LOT_SOLD'
   | 'TRANSACTION_UPDATED'
-  | 'PRICE_ALERT';
+  | 'PRICE_ALERT'
+  | 'TRANSPORT_BOOKING_REQUESTED'
+  | 'TRANSPORT_STATUS_UPDATED';
 
 export interface INotification {
   _id: string;

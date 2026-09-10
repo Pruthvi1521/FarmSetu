@@ -3,6 +3,7 @@ import { ITransaction, TransactionStatus } from '../../../../shared/types';
 import { transactionApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Receipt, CheckCircle2, Truck, Package, Clock, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrangeTransportModal } from './ArrangeTransportModal';
 
 export const TransactionTracker: React.FC = () => {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ export const TransactionTracker: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTxForTransport, setSelectedTxForTransport] = useState<ITransaction | null>(null);
 
   const fetchTransactions = async () => {
     setIsLoading(true);
@@ -163,29 +165,49 @@ export const TransactionTracker: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status Advancement CTA — FARMER and ADMIN only (BUYER cannot change status) */}
-                {user?.role !== 'BUYER' && nextStatusMap[tx.status] && (
-                  <div className="pt-2 flex justify-end">
+                {/* Status Advancement & Transport CTAs — FARMER and ADMIN only */}
+                {user?.role !== 'BUYER' && (
+                  <div className="pt-2 flex flex-wrap justify-end gap-3">
                     <button
-                      onClick={() => handleAdvanceStatus(tx)}
-                      disabled={isUpdating === tx._id}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold text-xs rounded-xl border border-slate-700 transition-colors flex items-center space-x-2"
+                      onClick={() => setSelectedTxForTransport(tx)}
+                      className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-semibold text-xs rounded-xl border border-emerald-500/30 transition-colors flex items-center space-x-1.5"
                     >
-                      {isUpdating === tx._id ? (
-                        <span>Updating...</span>
-                      ) : (
-                        <>
-                          <span>Advance to: {nextStatusMap[tx.status]?.replace('_', ' ')}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </>
-                      )}
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>Arrange Transport</span>
                     </button>
+
+                    {nextStatusMap[tx.status] && (
+                      <button
+                        onClick={() => handleAdvanceStatus(tx)}
+                        disabled={isUpdating === tx._id}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold text-xs rounded-xl border border-slate-700 transition-colors flex items-center space-x-2"
+                      >
+                        {isUpdating === tx._id ? (
+                          <span>Updating...</span>
+                        ) : (
+                          <>
+                            <span>Advance to: {nextStatusMap[tx.status]?.replace('_', ' ')}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
         </div>
+      )}
+
+      {selectedTxForTransport && (
+        <ArrangeTransportModal
+          transaction={selectedTxForTransport}
+          onClose={() => setSelectedTxForTransport(null)}
+          onSuccess={() => {
+            fetchTransactions();
+          }}
+        />
       )}
     </div>
   );

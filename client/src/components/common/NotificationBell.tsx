@@ -10,7 +10,9 @@ const TYPE_STYLES: Record<NotificationType, { dot: string; badge: string }> = {
   OFFER_REJECTED:       { dot: 'bg-rose-400',    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
   LOT_SOLD:             { dot: 'bg-emerald-400', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
   TRANSACTION_UPDATED:  { dot: 'bg-cyan-400',    badge: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' },
-  PRICE_ALERT:          { dot: 'bg-purple-400',  badge: 'bg-purple-500/15 text-purple-300 border-purple-500/30' }
+  PRICE_ALERT:          { dot: 'bg-purple-400',  badge: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+  TRANSPORT_BOOKING_REQUESTED: { dot: 'bg-teal-400', badge: 'bg-teal-500/15 text-teal-300 border-teal-500/30' },
+  TRANSPORT_STATUS_UPDATED:    { dot: 'bg-blue-400', badge: 'bg-blue-500/15 text-blue-300 border-blue-500/30' }
 };
 
 function timeAgo(dateStr: string): string {

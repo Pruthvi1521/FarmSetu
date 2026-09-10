@@ -7,7 +7,10 @@ import {
   IFarmerAnalytics,
   IBuyerAnalytics,
   INotification,
-  IMarketSummary
+  IMarketSummary,
+  ITransportEstimate,
+  ITransportBooking,
+  BookingStatus
 } from '../../../shared/types';
 
 const API_BASE_URL = '/api';
@@ -164,3 +167,34 @@ export const notificationApi = {
   markOneRead: (id: string) => apiFetch<{ message: string }>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllRead: () => apiFetch<{ message: string }>('/notifications/read-all', { method: 'PATCH' })
 };
+
+export const transportApi = {
+  getEstimate: (distanceKm: number, quantityKg: number) =>
+    apiFetch<{ success: boolean; data: ITransportEstimate }>(
+      `/transport/estimate?distanceKm=${distanceKm}&quantityKg=${quantityKg}`
+    ),
+
+  getVehicleRecommendation: (quantityKg: number) =>
+    apiFetch<{ success: boolean; data: { vehicleType: string; vehicleLabel: string; reason: string } }>(
+      `/transport/recommend-vehicle?quantityKg=${quantityKg}`
+    ),
+
+  createBooking: (transactionId: string, pickupLocation?: string, destinationLocation?: string) =>
+    apiFetch<{ success: boolean; data: ITransportBooking }>('/transport/bookings', {
+      method: 'POST',
+      body: JSON.stringify({ transactionId, pickupLocation, destinationLocation })
+    }),
+
+  getFarmerBookings: () =>
+    apiFetch<{ success: boolean; data: ITransportBooking[] }>('/transport/farmer-bookings'),
+
+  getBookingByTransaction: (transactionId: string) =>
+    apiFetch<{ success: boolean; data: ITransportBooking }>(`/transport/bookings/transaction/${transactionId}`),
+
+  updateBookingStatus: (id: string, status: BookingStatus) =>
+    apiFetch<{ success: boolean; data: ITransportBooking }>(`/transport/bookings/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    })
+};
+

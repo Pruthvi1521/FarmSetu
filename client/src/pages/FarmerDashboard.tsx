@@ -14,6 +14,7 @@ import { TransactionTracker } from '../components/farmer/TransactionTracker';
 import { FarmerAnalyticsView } from '../components/farmer/FarmerAnalyticsView';
 import { FarmerProfileView } from '../components/farmer/FarmerProfileView';
 import { MarketIntelligenceView } from '../components/farmer/MarketIntelligenceView';
+import { TransportBookingView } from '../components/farmer/TransportBookingView';
 
 import { marketApi } from '../services/api';
 import {
@@ -147,6 +148,9 @@ export const FarmerDashboardPage: React.FC = () => {
 
           {/* 5. Transactions */}
           <Route path="/transactions" element={<TransactionTracker />} />
+
+          {/* 5b. Transport */}
+          <Route path="/transport" element={<TransportBookingView />} />
 
           {/* 6. Analytics */}
           <Route path="/analytics" element={<FarmerAnalyticsView />} />

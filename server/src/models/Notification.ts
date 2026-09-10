@@ -16,7 +16,16 @@ const notificationSchema = new Schema<INotificationDoc>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: {
       type: String,
-      enum: ['NEW_OFFER', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'LOT_SOLD', 'TRANSACTION_UPDATED', 'PRICE_ALERT'],
+      enum: [
+        'NEW_OFFER',
+        'OFFER_ACCEPTED',
+        'OFFER_REJECTED',
+        'LOT_SOLD',
+        'TRANSACTION_UPDATED',
+        'PRICE_ALERT',
+        'TRANSPORT_BOOKING_REQUESTED',
+        'TRANSPORT_STATUS_UPDATED'
+      ],
       required: true
     },
     title: { type: String, required: true },

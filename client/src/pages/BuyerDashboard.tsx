@@ -5,6 +5,7 @@ import { lotApi, marketApi } from '../services/api';
 import { SubmitOfferModal } from '../components/buyer/SubmitOfferModal';
 import { TransactionTracker } from '../components/farmer/TransactionTracker';
 import { BuyerAnalyticsView } from '../components/buyer/BuyerAnalyticsView';
+import { TransportBookingView } from '../components/farmer/TransportBookingView';
 import { NotificationBell } from '../components/common/NotificationBell';
 import {
   ShoppingBag,
@@ -18,7 +19,8 @@ import {
   Eye,
   X,
   BarChart3,
-  Receipt
+  Receipt,
+  Truck
 } from 'lucide-react';
 
 // ─── Marketplace Sub-view ──────────────────────────────────────────────────────
@@ -327,9 +329,10 @@ export const BuyerDashboard: React.FC = () => {
 
   // Derive active tab directly from URL pathname — synchronous, no state or effect needed.
   const path = location.pathname;
-  const activeTab: 'marketplace' | 'transactions' | 'analytics' =
+  const activeTab: 'marketplace' | 'transactions' | 'analytics' | 'transport' =
     path.includes('/transactions') ? 'transactions' :
     path.includes('/analytics')   ? 'analytics'    :
+    path.includes('/transport')   ? 'transport'    :
                                      'marketplace';
 
   const tabClass = (tab: typeof activeTab) =>
@@ -367,6 +370,13 @@ export const BuyerDashboard: React.FC = () => {
                 <Receipt className="w-4 h-4" />
                 <span>My Transactions</span>
               </button>
+              <button
+                onClick={() => navigate('/buyer/transport')}
+                className={tabClass('transport')}
+              >
+                <Truck className="w-4 h-4" />
+                <span>Transport</span>
+              </button>
             </div>
 
             <NotificationBell />
@@ -379,6 +389,7 @@ export const BuyerDashboard: React.FC = () => {
         <Routes>
           <Route index element={<MarketplaceView />} />
           <Route path="transactions" element={<TransactionTracker />} />
+          <Route path="transport" element={<TransportBookingView />} />
           <Route path="analytics" element={<BuyerAnalyticsView />} />
         </Routes>
       </div>

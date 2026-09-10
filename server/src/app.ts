@@ -6,6 +6,7 @@ import lotRoutes from './routes/lotRoutes';
 import transactionRoutes from './routes/transactionRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import transportRoutes from './routes/transportRoutes';
 
 const app = express();
 
@@ -55,6 +56,9 @@ app.use('/api/analytics', analyticsRoutes);
 
 // Notification Routes
 app.use('/api/notifications', notificationRoutes);
+
+// Transport Routes
+app.use('/api/transport', transportRoutes);
 
 // Global 404 Handler
 app.use((req, res) => {
